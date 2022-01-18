@@ -12,6 +12,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+from .exceptions import ProtocolError
+
 
 class Client(ABC):
 
@@ -113,7 +115,10 @@ class Client(ABC):
         data = json.dumps(request, separators=(",", ":")).encode()
         if self._token:
             data = self._encrypt(data)
-        return await self._exchange(request["id"], data)
+        response = await self._exchange(request["id"], data)
+        if response.get("error"):
+            raise ProtocolError()
+        return response
 
     async def command(self, request: Dict[str, Any]) -> Dict[str, Any]:
         try:
@@ -130,6 +135,8 @@ class Client(ABC):
                     request["ts"] = self._get_ts()
             request["id"] = self._next_id()
             return await self._command(request)
+        except ProtocolError:
+            raise
         except Exception:
             self._stop()
             raise

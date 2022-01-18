@@ -4,6 +4,7 @@ import struct
 from typing import Any, Dict
 
 from .client import Client
+from .exceptions import NetworkError
 
 TCP_TIMEOUT = 5
 
@@ -23,7 +24,7 @@ class TcpClient(Client):
                 break
             data += chunk
         if len(data) != size:
-            raise Exception("Connection was unexpectedly closed")
+            raise NetworkError("Connection was unexpectedly closed")
         return data
 
     async def _recvmsg(self) -> bytes:
