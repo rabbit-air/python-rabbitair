@@ -6,10 +6,11 @@ from typing import Any, Dict
 from .client import Client
 from .exceptions import NetworkError
 
-TCP_TIMEOUT = 5
-
 
 class TcpClient(Client):
+
+    timeout: float = 5.0
+
     @classmethod
     def _create_socket(cls) -> socket.socket:
         return socket.socket(type=socket.SOCK_STREAM)
@@ -39,4 +40,4 @@ class TcpClient(Client):
         await loop.sock_sendall(self._sock, struct.pack("<H", len(data)) + data)
 
     async def _exchange(self, request_id: int, data: bytes) -> Dict[str, Any]:
-        return await asyncio.wait_for(super()._exchange(request_id, data), TCP_TIMEOUT)
+        return await asyncio.wait_for(super()._exchange(request_id, data), self.timeout)
