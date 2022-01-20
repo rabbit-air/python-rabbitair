@@ -6,13 +6,14 @@ import time
 from abc import ABC, abstractmethod
 from random import SystemRandom
 from types import TracebackType
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .exceptions import ProtocolError
+from .state import Lights, Mode, Moodlight, Sensitivity, Speed, State, TimerMode
 
 
 class Client(ABC):
@@ -140,3 +141,86 @@ class Client(ABC):
         except Exception:
             self._stop()
             raise
+
+    async def get_state(self) -> State:
+        response = await self.command({"cmd": 4})
+        return State(response["data"])
+
+    async def set_state(
+        self,
+        power: Optional[bool] = None,
+        mode: Optional[Mode] = None,
+        speed: Optional[Speed] = None,
+        sensitivity: Optional[Sensitivity] = None,
+        ionizer: Optional[bool] = None,
+        moodlight: Optional[Moodlight] = None,
+        filter_cleaning: Optional[bool] = None,
+        filter_replacement: Optional[bool] = None,
+        filter_life: Optional[int] = None,
+        filter_timer: Optional[int] = None,
+        lights: Optional[Lights] = None,
+        color: Optional[List] = None,
+        lsens_ctl: Optional[bool] = None,
+        filter_ctl: Optional[bool] = None,
+        buzzer: Optional[bool] = None,
+        lock: Optional[bool] = None,
+        timer_mode: Optional[TimerMode] = None,
+        timer: Optional[int] = None,
+        schedule: Optional[str] = None,
+    ) -> None:
+        data: Dict[str, Any] = dict()
+        if power is not None:
+            data["power"] = power
+        if mode is not None:
+            data["mode"] = mode.value
+        if speed is not None:
+            data["speed"] = speed.value
+        if sensitivity is not None:
+            data["sensitivity"] = sensitivity.value
+        if ionizer is not None:
+            data["ionizer"] = ionizer
+        if moodlight is not None:
+            data["moodlight"] = moodlight.value
+        if filter_cleaning is not None:
+            data["filter_cleaning"] = filter_cleaning
+        if filter_replacement is not None:
+            data["filter_replacement"] = filter_replacement
+        if filter_life is not None:
+            if filter_life < 0 or filter_life > 525600:
+                raise ValueError("The filter life value must be in the range 0-1440")
+            data["filter_life"] = filter_life
+        if filter_timer is not None:
+            if filter_timer < 0 or filter_timer > 525600:
+                raise ValueError("The filter timer value must be in the range 0-1440")
+            data["filter_timer"] = filter_timer
+        if lights is not None:
+            data["all_light_off"] = lights.value
+        if color is not None:
+            if len(color) != 9:
+                raise ValueError("The color length must be 9")
+            for v in color:
+                if v < 0 or v > 40:
+                    raise ValueError("The color values must be in the range 0-40")
+            data["color"] = color
+        if lsens_ctl is not None:
+            data["lsens_ctl"] = lsens_ctl
+        if filter_ctl is not None:
+            data["filter_ctl"] = filter_ctl
+        if buzzer is not None:
+            data["buzzer"] = buzzer
+        if lock is not None:
+            data["lock"] = lock
+        if timer_mode is not None:
+            data["timer_mode"] = timer_mode.value
+        if timer is not None:
+            if timer < 0 or timer > 1440:
+                raise ValueError("The timer value must be in the range 0-1440")
+            data["timer"] = timer
+        if schedule is not None:
+            if len(schedule) != 24:
+                raise ValueError("The schedule length must be 24")
+            for v in schedule:
+                if (v < "0" or v > "5") and v != "A":
+                    raise ValueError("The schedule values must be 0-5,A")
+            data["schedule"] = schedule
+        await self.command({"cmd": 4, "data": data})
