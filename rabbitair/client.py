@@ -13,7 +13,16 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .exceptions import ProtocolError
-from .state import Lights, Mode, Moodlight, Sensitivity, Speed, State, TimerMode
+from .response import (
+    Info,
+    Lights,
+    Mode,
+    Moodlight,
+    Sensitivity,
+    Speed,
+    State,
+    TimerMode,
+)
 
 
 class Client(ABC):
@@ -160,10 +169,10 @@ class Client(ABC):
         filter_timer: Optional[int] = None,
         lights: Optional[Lights] = None,
         color: Optional[List] = None,
-        lsens_ctl: Optional[bool] = None,
+        light_sensor_ctl: Optional[bool] = None,
         filter_ctl: Optional[bool] = None,
         buzzer: Optional[bool] = None,
-        lock: Optional[bool] = None,
+        child_lock: Optional[bool] = None,
         timer_mode: Optional[TimerMode] = None,
         timer: Optional[int] = None,
         schedule: Optional[str] = None,
@@ -202,14 +211,14 @@ class Client(ABC):
                 if v < 0 or v > 40:
                     raise ValueError("The color values must be in the range 0-40")
             data["color"] = color
-        if lsens_ctl is not None:
-            data["lsens_ctl"] = lsens_ctl
+        if light_sensor_ctl is not None:
+            data["lsens_ctl"] = light_sensor_ctl
         if filter_ctl is not None:
             data["filter_ctl"] = filter_ctl
         if buzzer is not None:
             data["buzzer"] = buzzer
-        if lock is not None:
-            data["lock"] = lock
+        if child_lock is not None:
+            data["lock"] = child_lock
         if timer_mode is not None:
             data["timer_mode"] = timer_mode.value
         if timer is not None:
@@ -224,3 +233,7 @@ class Client(ABC):
                     raise ValueError("The schedule values must be 0-5,A")
             data["schedule"] = schedule
         await self.command({"cmd": 4, "data": data})
+
+    async def get_info(self) -> Info:
+        response = await self.command({"cmd": 255})
+        return Info(response["data"])

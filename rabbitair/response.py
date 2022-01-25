@@ -86,7 +86,7 @@ class TimerMode(Enum):
     Schedule = 2
 
 
-class State:
+class Response:
     def __init__(self, data: Dict[str, Any]) -> None:
         self.data = data
 
@@ -101,14 +101,19 @@ class State:
             items.append(f"{name}={value}")
         return f"<{type(self).__name__} {' '.join(items)}>"
 
+
+class State(Response):
     @property
     def model(self) -> Optional[Model]:
         value = self.data.get("model")
         return None if value is None else Model(value)
 
     @property
-    def firmware(self) -> Optional[List]:
-        return self.data.get("firmware")
+    def main_firmware(self) -> Optional[str]:
+        value = self.data.get("firmware")
+        if value is None:
+            return None
+        return ".".join(str(x) for x in value)
 
     @property
     def power(self) -> Optional[bool]:
@@ -206,7 +211,7 @@ class State:
         return self.data.get("color")
 
     @property
-    def lsens_ctl(self) -> Optional[bool]:
+    def light_sensor_ctl(self) -> Optional[bool]:
         return self.data.get("lsens_ctl")
 
     @property
@@ -223,7 +228,7 @@ class State:
         return None if value is None else Gas(value)
 
     @property
-    def lock(self) -> Optional[bool]:
+    def child_lock(self) -> Optional[bool]:
         return self.data.get("lock")
 
     @property
@@ -248,5 +253,74 @@ class State:
         return self.data.get("rssi")
 
     @property
-    def v(self) -> Optional[str]:
+    def wifi_firmware(self) -> Optional[str]:
         return self.data.get("v")
+
+
+class RSSI(Response):
+    @property
+    def current(self) -> Optional[int]:
+        return self.data.get("cur")
+
+    @property
+    def min(self) -> Optional[int]:
+        return self.data.get("min")
+
+    @property
+    def max(self) -> Optional[int]:
+        return self.data.get("max")
+
+    @property
+    def average(self) -> Optional[int]:
+        return self.data.get("avg")
+
+
+class Info(Response):
+    @property
+    def name(self) -> str:
+        return self.data["name"]
+
+    @property
+    def wifi_firmware(self) -> str:
+        return self.data["mcu"]
+
+    @property
+    def build(self) -> str:
+        return self.data["build"]
+
+    @property
+    def mac(self) -> str:
+        return self.data["mac"]
+
+    @property
+    def time(self) -> Optional[str]:
+        return self.data.get("time")
+
+    @property
+    def uptime(self) -> int:
+        return self.data["uptime"]
+
+    @property
+    def motor_uptime(self) -> int:
+        return self.data["mup"]
+
+    @property
+    def wifi_uptime(self) -> int:
+        return self.data["wup"]
+
+    @property
+    def internet_uptime(self) -> Optional[int]:
+        return self.data.get("iup")
+
+    @property
+    def cloud_uptime(self) -> Optional[int]:
+        return self.data.get("cup")
+
+    @property
+    def main_firmware(self) -> Optional[str]:
+        return self.data.get("fv")
+
+    @property
+    def rssi(self) -> Optional[RSSI]:
+        value = self.data.get("rssi")
+        return None if value is None else RSSI(value)
