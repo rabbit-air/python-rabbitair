@@ -1,3 +1,5 @@
+"""Rabbit Air UDP-based client."""
+
 import asyncio
 import socket
 from typing import Any, Dict
@@ -6,6 +8,7 @@ from .client import Client
 
 
 class UdpClient(Client):
+    """UDP-based client."""
 
     retry_count: int = 3
     timeout: float = 2.0

@@ -1,3 +1,5 @@
+"""Rabbit Air TCP-based client."""
+
 import asyncio
 import socket
 import struct
@@ -8,6 +10,7 @@ from .exceptions import NetworkError
 
 
 class TcpClient(Client):
+    """TCP-based client."""
 
     timeout: float = 5.0
 

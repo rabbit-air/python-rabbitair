@@ -1,3 +1,5 @@
+"""Rabbit Air protocol client."""
+
 import asyncio
 import json
 import os
@@ -26,11 +28,15 @@ from .response import (
 
 
 class Client(ABC):
+    """Base class for the Rabbit Air protocol client.
+
+    To create an instance of the class use UdpClient or TcpClient."""
 
     _sock: Optional[socket.socket] = None
     _ts_diff: Optional[float] = None
 
     def __init__(self, host: str, token: Optional[str], port: int = 9009) -> None:
+        """Initialize the client."""
         self._host = host
         self._token = bytes.fromhex(token) if token else None
         self._port = port
@@ -131,6 +137,7 @@ class Client(ABC):
         return response
 
     async def command(self, request: Dict[str, Any]) -> Dict[str, Any]:
+        """Send raw command to the device."""
         try:
             if not self._sock:
                 await self._start()
@@ -152,6 +159,7 @@ class Client(ABC):
             raise
 
     async def get_state(self) -> State:
+        """Get the current state of the device."""
         response = await self.command({"cmd": 4})
         return State(response["data"])
 
@@ -177,6 +185,7 @@ class Client(ABC):
         timer: Optional[int] = None,
         schedule: Optional[str] = None,
     ) -> None:
+        """Change the state of the device."""
         data: Dict[str, Any] = dict()
         if power is not None:
             data["power"] = power
@@ -235,5 +244,6 @@ class Client(ABC):
         await self.command({"cmd": 4, "data": data})
 
     async def get_info(self) -> Info:
+        """Get information about the device."""
         response = await self.command({"cmd": 255})
         return Info(response["data"])
