@@ -36,11 +36,18 @@ class Client(ABC):
     _sock: Optional[socket.socket] = None
     _ts_diff: Optional[float] = None
 
-    def __init__(self, host: str, token: Optional[str], port: int = 9009) -> None:
+    def __init__(
+        self,
+        host: str,
+        token: Optional[str],
+        port: int = 9009,
+        zeroconf: AsyncZeroconf = None,
+    ) -> None:
         """Initialize the client."""
         self._host = host
         self._token = bytes.fromhex(token) if token else None
         self._port = port
+        self._zeroconf = zeroconf
         self._id = SystemRandom().randrange(0x1000000)
 
     def __enter__(self) -> "Client":
@@ -62,15 +69,14 @@ class Client(ABC):
         pass
 
     async def _resolve(self, host: str) -> str:
-        if host.endswith(".local"):
-            async with AsyncZeroconf() as zeroconf:
-                info = await zeroconf.async_get_service_info(
-                    "_rabbitair._udp.local.", host + "."
-                )
-                if info:
-                    addr = info.parsed_addresses()
-                    if len(addr) > 0:
-                        return addr[0]
+        if self._zeroconf is not None and host.endswith(".local"):
+            info = await self._zeroconf.async_get_service_info(
+                "_rabbitair._udp.local.", host + "."
+            )
+            if info:
+                addr = info.parsed_addresses()
+                if len(addr) > 0:
+                    return addr[0]
         return host
 
     async def _start(self) -> None:
