@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional, Type
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from zeroconf.asyncio import AsyncZeroconf
 
 from .exceptions import ProtocolError
 from .response import (
@@ -60,12 +61,25 @@ class Client(ABC):
     def _create_socket(cls) -> socket.socket:
         pass
 
+    async def _resolve(self, host: str) -> str:
+        if host.endswith(".local"):
+            async with AsyncZeroconf() as zeroconf:
+                info = await zeroconf.async_get_service_info(
+                    "_rabbitair._udp.local.", host + "."
+                )
+                if info:
+                    addr = info.parsed_addresses()
+                    if len(addr) > 0:
+                        return addr[0]
+        return host
+
     async def _start(self) -> None:
         assert self._sock is None
         self._sock = self._create_socket()
         self._sock.setblocking(False)
         loop = asyncio.get_running_loop()
-        await loop.sock_connect(self._sock, (self._host, self._port))
+        host = await self._resolve(self._host)
+        await loop.sock_connect(self._sock, (host, self._port))
 
     def _stop(self) -> None:
         assert self._sock is not None
