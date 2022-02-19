@@ -12,6 +12,7 @@ from .response import (
     Mode,
     Model,
     Moodlight,
+    Quality,
     Sensitivity,
     Speed,
     State,

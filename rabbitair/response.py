@@ -202,26 +202,14 @@ class State(Response):
     @property
     def idle(self) -> Optional[bool]:
         """Device is in idle mode."""
-        return self.data.get("idle")
+        value = self.data.get("idle")
+        return None if value is None else bool(value)
 
     @property
     def moodlight(self) -> Optional[Moodlight]:
         """Mood Light mode."""
         value = self.data.get("moodlight")
-        if value is None:
-            return None
-        elif value == 0:
-            return Moodlight.Off
-        elif value == 1:
-            return Moodlight.On
-        elif value == 2:
-            return Moodlight.Preset1 if self.model is Model.A3 else Moodlight.Auto
-        elif value == 3:
-            return Moodlight.Preset2
-        elif value == 4:
-            return Moodlight.Preset3
-        else:
-            assert False
+        return None if value is None else Moodlight(value)
 
     @property
     def sleep(self) -> Optional[bool]:
@@ -271,9 +259,10 @@ class State(Response):
         return None if value is None else Error(value)
 
     @property
-    def tag_state(self) -> Optional[int]:
+    def tag_state(self) -> Optional[bool]:
         """Filter tag state."""
-        return self.data.get("tag_state")
+        value = self.data.get("tag_state")
+        return None if value is None else bool(value)
 
     @property
     def tag_uid(self) -> Optional[List]:

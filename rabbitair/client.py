@@ -46,6 +46,8 @@ class Client(ABC):
         """Initialize the client."""
         self._host = host
         self._token = bytes.fromhex(token) if token else None
+        if self._token and len(self._token) != 16:
+            raise ValueError("Invalid token length")
         self._port = port
         self._zeroconf = zeroconf
         self._id = SystemRandom().randrange(0x1000000)
@@ -66,7 +68,7 @@ class Client(ABC):
     @classmethod
     @abstractmethod
     def _create_socket(cls) -> socket.socket:
-        pass
+        """Creates a network socket of the desired type."""
 
     async def _resolve(self, host: str) -> str:
         if self._zeroconf is not None and host.endswith(".local"):
@@ -127,11 +129,11 @@ class Client(ABC):
 
     @abstractmethod
     async def _recvmsg(self) -> bytes:
-        pass
+        """Receives messages over the network."""
 
     @abstractmethod
     async def _sendmsg(self, data: bytes) -> None:
-        pass
+        """Sends messages over the network."""
 
     async def _exchange(self, request_id: int, data: bytes) -> Dict[str, Any]:
         await self._sendmsg(data)
