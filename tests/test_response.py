@@ -1,4 +1,5 @@
 import pytest
+
 from rabbitair import Model, Quality, State
 
 

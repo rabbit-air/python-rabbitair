@@ -41,7 +41,7 @@ class Client(ABC):
         host: str,
         token: Optional[str],
         port: int = 9009,
-        zeroconf: AsyncZeroconf = None,
+        zeroconf: Optional[AsyncZeroconf] = None,
     ) -> None:
         """Initialize the client."""
         self._host = host
@@ -113,19 +113,19 @@ class Client(ABC):
         iv = msg[-16:]
         msg = msg[:-16]
         cipher = Cipher(algorithms.AES(self._token), modes.CBC(iv), default_backend())
-        decryptor = cipher.decryptor()
+        decryptor = cipher.decryptor()  # type: ignore[no-untyped-call]
         msg = decryptor.update(msg) + decryptor.finalize()
-        unpadder = padding.PKCS7(128).unpadder()
-        return unpadder.update(msg) + unpadder.finalize()
+        unpadder = padding.PKCS7(128).unpadder()  # type: ignore[no-untyped-call]
+        return unpadder.update(msg) + unpadder.finalize()  # type: ignore[no-any-return]
 
     def _encrypt(self, msg: bytes) -> bytes:
         assert self._token is not None
-        padder = padding.PKCS7(128).padder()
+        padder = padding.PKCS7(128).padder()  # type: ignore[no-untyped-call]
         msg = padder.update(msg) + padder.finalize()
         iv = os.urandom(16)
         cipher = Cipher(algorithms.AES(self._token), modes.CBC(iv), default_backend())
-        encryptor = cipher.encryptor()
-        return encryptor.update(msg) + encryptor.finalize() + iv
+        encryptor = cipher.encryptor()  # type: ignore[no-untyped-call]
+        return encryptor.update(msg) + encryptor.finalize() + iv  # type: ignore[no-any-return]
 
     @abstractmethod
     async def _recvmsg(self) -> bytes:
@@ -142,7 +142,7 @@ class Client(ABC):
             if self._token:
                 data = self._decrypt(data)
             try:
-                response = json.loads(data)
+                response: Dict[str, Any] = json.loads(data)
                 if response["id"] == request_id:
                     return response
             except (json.JSONDecodeError, KeyError):
@@ -198,7 +198,7 @@ class Client(ABC):
         filter_life: Optional[int] = None,
         filter_timer: Optional[int] = None,
         lights: Optional[Lights] = None,
-        color: Optional[List] = None,
+        color: Optional[List[int]] = None,
         light_sensor_ctl: Optional[bool] = None,
         filter_ctl: Optional[bool] = None,
         buzzer: Optional[bool] = None,
@@ -259,8 +259,8 @@ class Client(ABC):
         if schedule is not None:
             if len(schedule) != 24:
                 raise ValueError("The schedule length must be 24")
-            for v in schedule:
-                if (v < "0" or v > "5") and v != "A":
+            for c in schedule:
+                if (c < "0" or c > "5") and c != "A":
                     raise ValueError("The schedule values must be 0-5,A")
             data["schedule"] = schedule
         await self.command({"cmd": 4, "data": data})

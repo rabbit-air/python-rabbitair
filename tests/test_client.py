@@ -1,9 +1,10 @@
 import asyncio
 import json
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Coroutine, Dict, Optional
 from unittest.mock import Mock, patch
 
 import pytest
+
 from rabbitair import (
     Error,
     FilterType,
@@ -164,7 +165,9 @@ TEST_INFO_RESPONSE_A3 = """{
 }"""
 
 
-def mock_command(model: Optional[Model]) -> Callable:
+def mock_command(
+    model: Optional[Model],
+) -> Callable[[Any, Dict[str, Any]], Coroutine[Any, Any, Dict[str, Any]]]:
     if model is Model.MinusA2:
         state_response = TEST_STATE_RESPONSE_A2
         info_response = TEST_INFO_RESPONSE_A2
@@ -175,7 +178,7 @@ def mock_command(model: Optional[Model]) -> Callable:
         state_response = "{}"
         info_response = "{}"
 
-    async def command(self, request: Dict[str, Any]) -> Dict[str, Any]:
+    async def command(self: Any, request: Dict[str, Any]) -> Dict[str, Any]:
         if request["cmd"] == 4:
             response = state_response
         elif request["cmd"] == 9:
@@ -184,7 +187,7 @@ def mock_command(model: Optional[Model]) -> Callable:
             response = info_response
         else:
             assert False
-        result = json.loads(response)
+        result: Dict[str, Any] = json.loads(response)
         result["id"] = request["id"]
         return result
 
@@ -309,7 +312,7 @@ async def test_state_a3() -> None:
 
 
 @pytest.mark.parametrize("model,fv", [(Model.MinusA2, None), (Model.A3, "1.0.0.4")])
-async def test_info(model, fv) -> None:
+async def test_info(model: Model, fv: str) -> None:
     with patch("rabbitair.Client._command", new_callable=mock_command, model=model):
         with UdpClient(TEST_IP, TEST_TOKEN) as client:
             info = await client.get_info()
@@ -325,6 +328,7 @@ async def test_info(model, fv) -> None:
     assert info.internet_uptime == 294213
     assert info.cloud_uptime == 297758
     assert info.main_firmware == fv
+    assert info.rssi is not None
     assert info.rssi.current == -68
     assert info.rssi.min == -78
     assert info.rssi.max == -58

@@ -2,7 +2,14 @@
 
 import inspect
 from enum import Enum, unique
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Generic, List, Optional, TypeVar
+
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
+
+T = TypeVar("T")
 
 
 @unique
@@ -125,13 +132,73 @@ class TimerMode(Enum):
     Schedule = 2
 
 
-class Response:
+class StateDict(TypedDict, total=False):
+    model: int
+    firmware: List[int]
+    power: bool
+    mode: int
+    speed: int
+    quality: int
+    sensitivity: int
+    ionizer: bool
+    idle: int
+    moodlight: int
+    sleep: bool
+    filter_cleaning: bool
+    filter_replacement: bool
+    filter_life: int
+    light_sensor: bool
+    particulate_sensor: int
+    filter_timer: int
+    all_light_off: int
+    error: int
+    tag_state: int
+    tag_uid: List[int]
+    filter_type: int
+    pm_sensor: List[int]
+    color: List[int]
+    lsens_ctl: bool
+    filter_ctl: bool
+    buzzer: bool
+    gas: int
+    lock: bool
+    open: bool
+    timer_mode: int
+    timer: int
+    schedule: str
+    rssi: int
+    v: str
+
+
+class RssiDict(TypedDict, total=False):
+    cur: int
+    min: int
+    max: int
+    avg: int
+
+
+class InfoDict(TypedDict, total=False):
+    name: str
+    mcu: str
+    build: str
+    mac: str
+    time: str
+    uptime: int
+    mup: int
+    wup: int
+    iup: int
+    cup: int
+    fv: str
+    rssi: RssiDict
+
+
+class Response(Generic[T]):
     """Base class for the device response."""
 
-    def __init__(self, data: Dict[str, Any]) -> None:
+    def __init__(self, data: T) -> None:
         self.data = data
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         items = []
         props = inspect.getmembers(type(self), lambda x: isinstance(x, property))
         for name, prop in props:
@@ -143,7 +210,7 @@ class Response:
         return f"<{type(self).__name__} {' '.join(items)}>"
 
 
-class State(Response):
+class State(Response[StateDict]):
     """Device state."""
 
     @property
@@ -265,7 +332,7 @@ class State(Response):
         return None if value is None else bool(value)
 
     @property
-    def tag_uid(self) -> Optional[List]:
+    def tag_uid(self) -> Optional[List[int]]:
         """Filter tag unique identifier."""
         return self.data.get("tag_uid")
 
@@ -276,12 +343,12 @@ class State(Response):
         return None if value is None else FilterType(value)
 
     @property
-    def pm_sensor(self) -> Optional[List]:
+    def pm_sensor(self) -> Optional[List[int]]:
         """Extended particle sensor readings."""
         return self.data.get("pm_sensor")
 
     @property
-    def color(self) -> Optional[List]:
+    def color(self) -> Optional[List[int]]:
         """Color palette for Mood Light."""
         return self.data.get("color")
 
@@ -347,7 +414,7 @@ class State(Response):
         return self.data.get("v")
 
 
-class RSSI(Response):
+class RSSI(Response[RssiDict]):
     """Detailed information about Wi-Fi RSSI."""
 
     @property
@@ -371,7 +438,7 @@ class RSSI(Response):
         return self.data.get("avg")
 
 
-class Info(Response):
+class Info(Response[InfoDict]):
     """Information about the device."""
 
     @property
