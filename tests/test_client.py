@@ -1,3 +1,5 @@
+"""Test the RabbitAir client."""
+
 import asyncio
 import json
 from typing import Any, Callable, Coroutine, Dict, Optional
@@ -9,7 +11,6 @@ from rabbitair import (
     Error,
     FilterType,
     Gas,
-    Info,
     Lights,
     Mode,
     Model,
@@ -18,7 +19,6 @@ from rabbitair import (
     Quality,
     Sensitivity,
     Speed,
-    State,
     TimerMode,
     UdpClient,
 )
@@ -168,6 +168,7 @@ TEST_INFO_RESPONSE_A3 = """{
 def mock_command(
     model: Optional[Model],
 ) -> Callable[[Any, Dict[str, Any]], Coroutine[Any, Any, Dict[str, Any]]]:
+    """Mock command."""
     if model is Model.MinusA2:
         state_response = TEST_STATE_RESPONSE_A2
         info_response = TEST_INFO_RESPONSE_A2
@@ -196,18 +197,21 @@ def mock_command(
 
 @pytest.mark.parametrize("token", [TEST_TOKEN.lower(), TEST_TOKEN.upper(), "", None])
 def test_create(token: str) -> None:
-    client = UdpClient(TEST_IP, token)
+    """Instance creation test."""
+    UdpClient(TEST_IP, token)
 
 
 @pytest.mark.parametrize(
     "token", [TEST_TOKEN[:30], TEST_TOKEN + TEST_TOKEN, TEST_TOKEN.replace("1", "x")]
 )
 def test_create_fail(token: str) -> None:
+    """Test cases where instance creation fails."""
     with pytest.raises(ValueError):
-        client = UdpClient(TEST_IP, token)
+        UdpClient(TEST_IP, token)
 
 
 async def test_zeroconf() -> None:
+    """Test mDNS resolver."""
     info = Mock()
     info.parsed_addresses.return_value = [TEST_IP]
 
@@ -220,12 +224,13 @@ async def test_zeroconf() -> None:
         "rabbitair.Client._command", new_callable=mock_command, model=Model.MinusA2
     ):
         with UdpClient("test.local", TEST_TOKEN, zeroconf=zc) as client:
-            state = await client.get_state()
+            await client.get_state()
 
     assert len(info.parsed_addresses.mock_calls) == 1
 
 
 async def test_state_a2() -> None:
+    """Test state response for MinusA2."""
     with patch(
         "rabbitair.Client._command", new_callable=mock_command, model=Model.MinusA2
     ):
@@ -270,6 +275,7 @@ async def test_state_a2() -> None:
 
 
 async def test_state_a3() -> None:
+    """Test state response for A3."""
     with patch("rabbitair.Client._command", new_callable=mock_command, model=Model.A3):
         with UdpClient(TEST_IP, TEST_TOKEN) as client:
             state = await client.get_state()
@@ -313,6 +319,7 @@ async def test_state_a3() -> None:
 
 @pytest.mark.parametrize("model,fv", [(Model.MinusA2, None), (Model.A3, "1.0.0.4")])
 async def test_info(model: Model, fv: str) -> None:
+    """Test info response."""
     with patch("rabbitair.Client._command", new_callable=mock_command, model=model):
         with UdpClient(TEST_IP, TEST_TOKEN) as client:
             info = await client.get_info()
@@ -336,29 +343,33 @@ async def test_info(model: Model, fv: str) -> None:
 
 
 async def test_no_response() -> None:
+    """Test no response."""
     with patch("rabbitair.Client._command", side_effect=asyncio.TimeoutError):
         with UdpClient(TEST_IP, TEST_TOKEN) as client:
             with pytest.raises(asyncio.TimeoutError):
-                state = await client.get_state()
+                await client.get_state()
 
 
 async def test_protocol_error() -> None:
+    """Test protocol error response."""
     with patch("rabbitair.Client._command", side_effect=ProtocolError):
         with UdpClient(TEST_IP, TEST_TOKEN) as client:
             with pytest.raises(ProtocolError):
-                state = await client.get_state()
+                await client.get_state()
 
 
 async def test_sequential_requests() -> None:
+    """Test sequential requests."""
     with patch(
         "rabbitair.Client._command", new_callable=mock_command, model=Model.MinusA2
     ):
         with UdpClient(TEST_IP, TEST_TOKEN) as client:
-            state = await client.get_state()
-            info = await client.get_info()
+            await client.get_state()
+            await client.get_info()
 
 
 async def test_set_state() -> None:
+    """Test set state."""
     with patch("rabbitair.Client._command", new_callable=mock_command, model=Model.A3):
         with UdpClient(TEST_IP, TEST_TOKEN) as client:
             await client.set_state(

@@ -2,7 +2,7 @@
 
 import inspect
 from enum import Enum, unique
-from typing import Any, Dict, Generic, List, Optional, TypeVar
+from typing import Generic, List, Optional, TypeVar
 
 try:
     from typing import TypedDict
@@ -133,6 +133,8 @@ class TimerMode(Enum):
 
 
 class StateDict(TypedDict, total=False):
+    """State response typing."""
+
     model: int
     firmware: List[int]
     power: bool
@@ -171,6 +173,8 @@ class StateDict(TypedDict, total=False):
 
 
 class RssiDict(TypedDict, total=False):
+    """RSSI typing."""
+
     cur: int
     min: int
     max: int
@@ -178,6 +182,8 @@ class RssiDict(TypedDict, total=False):
 
 
 class InfoDict(TypedDict, total=False):
+    """Info response typing."""
+
     name: str
     mcu: str
     build: str
@@ -196,9 +202,11 @@ class Response(Generic[T]):
     """Base class for the device response."""
 
     def __init__(self, data: T) -> None:
+        """Initialize."""
         self.data = data
 
     def __repr__(self) -> str:
+        """Return the string representation of the object."""
         items = []
         props = inspect.getmembers(type(self), lambda x: isinstance(x, property))
         for name, prop in props:
@@ -321,7 +329,7 @@ class State(Response[StateDict]):
 
     @property
     def error(self) -> Optional[Error]:
-        """Internal error codes."""
+        """Internal error codes."""  # noqa: D401
         value = self.data.get("error")
         return None if value is None else Error(value)
 
@@ -344,7 +352,7 @@ class State(Response[StateDict]):
 
     @property
     def pm_sensor(self) -> Optional[List[int]]:
-        """Extended particle sensor readings."""
+        """Extended particle sensor readings."""  # noqa: D401
         return self.data.get("pm_sensor")
 
     @property
@@ -419,7 +427,7 @@ class RSSI(Response[RssiDict]):
 
     @property
     def current(self) -> Optional[int]:
-        """Current RSSI value."""
+        """Current RSSI value."""  # noqa: D401
         return self.data.get("cur")
 
     @property
@@ -463,7 +471,7 @@ class Info(Response[InfoDict]):
 
     @property
     def time(self) -> Optional[str]:
-        """Current time."""
+        """Current time."""  # noqa: D401
         return self.data.get("time")
 
     @property

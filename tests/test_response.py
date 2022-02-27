@@ -1,9 +1,12 @@
+"""Test response parsing."""
+
 import pytest
 
 from rabbitair import Model, Quality, State
 
 
 def test_state_invalid_value() -> None:
+    """Test invalid value in state response."""
     state = State({"mode": 10})
     assert repr(state)
     with pytest.raises(ValueError):

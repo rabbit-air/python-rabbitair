@@ -31,7 +31,8 @@ from .response import (
 class Client(ABC):
     """Base class for the Rabbit Air protocol client.
 
-    To create an instance of the class use UdpClient or TcpClient."""
+    To create an instance of the class use UdpClient or TcpClient.
+    """
 
     _sock: Optional[socket.socket] = None
     _ts_diff: Optional[float] = None
@@ -53,6 +54,7 @@ class Client(ABC):
         self._id = SystemRandom().randrange(0x1000000)
 
     def __enter__(self) -> "Client":
+        """Enter the runtime context related to this object."""
         return self
 
     def __exit__(
@@ -61,6 +63,7 @@ class Client(ABC):
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> Optional[bool]:
+        """Close the client."""
         if self._sock is not None:
             self._sock.close()
         return None
@@ -68,7 +71,7 @@ class Client(ABC):
     @classmethod
     @abstractmethod
     def _create_socket(cls) -> socket.socket:
-        """Creates a network socket of the desired type."""
+        """Create a network socket."""
 
     async def _resolve(self, host: str) -> str:
         if self._zeroconf is not None and host.endswith(".local"):
@@ -129,11 +132,11 @@ class Client(ABC):
 
     @abstractmethod
     async def _recvmsg(self) -> bytes:
-        """Receives messages over the network."""
+        """Receive messages over the network."""
 
     @abstractmethod
     async def _sendmsg(self, data: bytes) -> None:
-        """Sends messages over the network."""
+        """Send messages over the network."""
 
     async def _exchange(self, request_id: int, data: bytes) -> Dict[str, Any]:
         await self._sendmsg(data)
@@ -208,7 +211,7 @@ class Client(ABC):
         schedule: Optional[str] = None,
     ) -> None:
         """Change the state of the device."""
-        data: Dict[str, Any] = dict()
+        data: Dict[str, Any] = {}
         if power is not None:
             data["power"] = power
         if mode is not None:
