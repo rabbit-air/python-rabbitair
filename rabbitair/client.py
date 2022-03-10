@@ -52,6 +52,7 @@ class Client(ABC):
         self._port = port
         self._zeroconf = zeroconf
         self._id = SystemRandom().randrange(0x1000000)
+        self._lock = asyncio.Lock()
 
     def __enter__(self) -> "Client":
         """Enter the runtime context related to this object."""
@@ -163,25 +164,26 @@ class Client(ABC):
 
     async def command(self, request: Dict[str, Any]) -> Dict[str, Any]:
         """Send raw command to the device."""
-        try:
-            if not self._sock:
-                await self._start()
-            if self._token:
-                if self._ts_diff is None:
-                    ts_request = {"id": self._next_id(), "cmd": 9}
-                    response = await self._command(ts_request)
-                    ts = response["data"]["ts"]
-                    self._ts_diff = ts - self._clock()
-                    request["ts"] = ts
-                else:
-                    request["ts"] = self._get_ts()
-            request["id"] = self._next_id()
-            return await self._command(request)
-        except ProtocolError:
-            raise
-        except Exception:
-            self._stop()
-            raise
+        async with self._lock:
+            try:
+                if not self._sock:
+                    await self._start()
+                if self._token:
+                    if self._ts_diff is None:
+                        ts_request = {"id": self._next_id(), "cmd": 9}
+                        response = await self._command(ts_request)
+                        ts = response["data"]["ts"]
+                        self._ts_diff = ts - self._clock()
+                        request["ts"] = ts
+                    else:
+                        request["ts"] = self._get_ts()
+                request["id"] = self._next_id()
+                return await self._command(request)
+            except ProtocolError:
+                raise
+            except Exception:
+                self._stop()
+                raise
 
     async def get_state(self) -> State:
         """Get the current state of the device."""
